@@ -21,7 +21,7 @@ def process_raw_data( path: str, split: str, extractor_type: str = "keybert", li
     df["keywords"] = ke.extract_all(list(df["question.stem"]))
     
     # save as csv file
-    df.to_csv(f"../data/{split}split")
+    df.to_csv(f"../data/{split}split.csv")
     
 def create_datafiles():
     process_raw_data(DEV_PATH, "DEV")
