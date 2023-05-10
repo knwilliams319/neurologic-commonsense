@@ -18,3 +18,13 @@ We’re framing an open generative task as an extractive question-answering task
 ## Evaluation and Benchmarks
 In the CommonSenseQA paper, the researchers evaluate models by calculating their overall accuracy. This is possible because each question has multiple-choice answers. We also believe that accuracy is important to validating our approach. Additionally, because the paper on CommonSenceQA evaluates performance on the dataset using accuracy, it will enable us to do an apples to apples comparison. Because our focus is on improving text generation, we want our model to answer the question in its own words. Thus, the model will be “accurate” if it uses the correct multiple-choice option in its generated sentence. Accuracy doesn’t tell the whole story, though. We don’t want our models to be correct only because they were fed the right knowledge from the base. We also want them to form contextually-relevant answers. Thus, we will also incorporate some kind of similarity score over the words in the question (e.g. BLEU or BERTScore). In regards to benchmarks, we will apply our Neurologic-Decoding variant to an LLM like T5. We will compare the results of our decoding variant against the zero-shot and fine-tuned performances of the same LLM.
 
+## Acknowledgements
+This work includes data from ConceptNet 5, which was compiled by the
+Commonsense Computing Initiative. ConceptNet 5 is freely available under
+the Creative Commons Attribution-ShareAlike license (CC BY SA 3.0) from
+http://conceptnet.io.
+
+The included data was created by contributors to Commonsense Computing
+projects, contributors to Wikimedia projects, DBPedia, OpenCyc, Games
+with a Purpose, Princeton University's WordNet, Francis Bond's Open
+Multilingual WordNet, and Jim Breen's JMDict.
