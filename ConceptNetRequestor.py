@@ -31,7 +31,8 @@ class ConceptNetRequestor:
         Parameters
         ----------
         q_concept: str
-            The english-language concept word to be queried in ConceptNet
+            The english-language concept word to be queried in ConceptNet. Multi-word concepts can be queried
+            with underscores between words, e.g. "apartment_building"
 
         Returns
         -------
@@ -49,21 +50,27 @@ class ConceptNetRequestor:
         if not q_concept: # Check input for validity
             raise ValueError("cannot query ConceptNet for the empty string")
         
-        data = requests.get(self.api + q_concept).json() # Query ConceptNet API and format response into JSON
+        # Query ConceptNet API and format response into JSON
+        # NOTE: Returned edges in the edges list may be in towards the queried concept, or out towards
+        #       a related one. Thus, we must check both nodes in the data-processing loop. 
+        data = requests.get(self.api + q_concept).json() 
 
         if 'error' in data.keys(): # This may never happen in practice, but just in case
             raise ValueError(f"queried concept {q_concept} is not a node in ConceptNet") 
         
-        if len(data['edges']) == 0: # Return empty list if there are no edges
-            return []
+        edges = [] # Return value
         
-        # NOTE: Must use edge['start']['label'] instead of q_concept. Sometimes the returned edges point
-        #       to q_concept from another node, so using q_concept as 'start' would result in non-sensical
-        #       self-edges. 
-        edges = [{'start': edge['start']['label'], 
-                  'end': edge['end']['label'], 
-                  'relationship' : edge['rel']['label'],
-                  'weight': edge['weight']} for edge in data['edges']] # Return value
+        # Data processing loop
+        for edge in data['edges']:
+            # Even though we're querying the English API path, some concept edges are to foreign languages.
+            # These edges should be filtered for the sake of our task.
+            if edge['start']['language'] != 'en' or edge['end']['language'] != 'en':
+                continue
+
+            edges.append({'start': edge['start']['label'], 
+                          'end': edge['end']['label'], 
+                          'relationship' : edge['rel']['label'],
+                          'weight': edge['weight']}) 
         return edges
 
 if __name__ == "__main__":
