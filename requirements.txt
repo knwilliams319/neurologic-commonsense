@@ -1,0 +1,4 @@
+keybert==0.7.0
+numpy==1.22.2
+pandas==2.0.1
+summa==1.2.0
