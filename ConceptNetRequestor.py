@@ -8,7 +8,8 @@ Reference: https://github.com/commonsense/conceptnet5/wiki/API
 Last Modified Date: 5/10/2023
 Last Modified By: Kyle Williams
 '''
-import requests
+import requests # used by the ConceptNetRequestor
+import sys # used by __main__
 
 class ConceptNetRequestor: 
     def __init__(self):
@@ -56,19 +57,29 @@ class ConceptNetRequestor:
         if len(data['edges']) == 0: # Return empty list if there are no edges
             return []
         
-        # TODO: This code does nothing to remove repeat edges. Should we just keep the repeat edge with the highest
-        #       weight? Should we average the weights? Or should we keep the edge that's the most recently updated?
-        #
-        #       We should investigate to the significance of weights before we make a decision.
-        edges = [{'start': q_concept, 
+        # NOTE: Must use edge['start']['label'] instead of q_concept. Sometimes the returned edges point
+        #       to q_concept from another node, so using q_concept as 'start' would result in non-sensical
+        #       self-edges. 
+        edges = [{'start': edge['start']['label'], 
                   'end': edge['end']['label'], 
                   'relationship' : edge['rel']['label'],
                   'weight': edge['weight']} for edge in data['edges']] # Return value
         return edges
 
 if __name__ == "__main__":
-    cnr = ConceptNetRequestor()
-
-    # This is an interesting case of ConceptNet. If you look at the output, there are numerous repeat edges
-    # (smile, HasSubevent, smile) with different weights. 
-    print(cnr.get_edges("smile"))
+    """
+    Invoke main from the command line to see the edges associated with an input concept node
+    """
+    if len(sys.argv) < 2:
+        raise ValueError("Please pass an English string to request that node's edges from ConceptNet!")
+    elif len(sys.argv) > 2:
+        raise ValueError("This function only accepts a single argument")
+    else:
+        arg = sys.argv[1]
+        cnr = ConceptNetRequestor()
+        edges = cnr.get_edges(arg)
+        for edge in edges:
+            print(edge)
+        
+    
+    
