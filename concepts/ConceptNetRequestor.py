@@ -9,6 +9,7 @@ Last Modified Date: 5/10/2023
 Last Modified By: Kyle Williams
 '''
 import requests # used by the ConceptNetRequestor
+import re # used by ConceptNetRequestor to format multiple-word nodes
 import sys # used by __main__
 
 class ConceptNetRequestor: 
@@ -23,7 +24,7 @@ class ConceptNetRequestor:
         """
         self.api = "http://api.conceptnet.io/c/en/"
 
-    def get_edges(self, q_concept: str):
+    def get_edges(self, q_concept: str, raise_error=False):
         """
         Makes a request for the information contained at a ConceptNet node, then returns a list of the
         edges of that node.
@@ -46,6 +47,9 @@ class ConceptNetRequestor:
                 'relationship' --> str: the relationship that connects the queried concept and this one
                 'weight' --> float: the weight of the edge
             }
+        raise_error : Bool
+            Whether or not this function should raise a ValueError if the queried concept is not a node in
+            ConceptNet
         """
         if not q_concept: # Check input for validity
             raise ValueError("cannot query ConceptNet for the empty string")
@@ -55,8 +59,8 @@ class ConceptNetRequestor:
         #       a related one. Thus, we must check both nodes in the data-processing loop. 
         data = requests.get(self.api + q_concept).json() 
 
-        if 'error' in data.keys(): # This may never happen in practice, but just in case
-            raise ValueError(f"queried concept {q_concept} is not a node in ConceptNet") 
+        if raise_error and 'error' in data.keys(): # This may never happen in practice, but just in case
+            raise ValueError(f"queried concept {q_concept} is not a node in ConceptNet")
         
         edges = [] # Return value
         
@@ -64,11 +68,14 @@ class ConceptNetRequestor:
         for edge in data['edges']:
             # Even though we're querying the English API path, some concept edges are to foreign languages.
             # These edges should be filtered for the sake of our task.
+
+            if edge['surfaceText'] == None: continue 
+            
             if edge['start']['language'] != 'en' or edge['end']['language'] != 'en':
                 continue
 
-            edges.append({'start': edge['start']['label'], 
-                          'end': edge['end']['label'], 
+            edges.append({'start': re.sub(r"-", " ", edge['start']['label']), 
+                          'end': re.sub(r"-", " ", edge['end']['label']), 
                           'relationship' : edge['rel']['label'],
                           'weight': edge['weight']}) 
         return edges
