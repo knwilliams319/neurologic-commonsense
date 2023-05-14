@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import regex as re
-from keyword_extractor import KeywordExtractor
+from KeywordExtractor import KeywordExtractor
 
 DEV_PATH   = "../data/dev_rand_split.jsonl"
 TEST_PATH  = "../data/test_rand_split_no_answers.jsonl"
