@@ -26,7 +26,7 @@ class BaseLM(torch.nn.Module):
             if not constrained:
                 return self.generator(text, max_new_tokens=self.max_len, num_return_sequences=self.num_returns)
             
-            print("Cannot performed constrained generation with generator. Generating manually.")
+            print("Cannot perform constrained generation with generator. Generating manually.")
         
         inputs = self.tokenizer(text, return_tensors="pt")
         
