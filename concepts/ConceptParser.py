@@ -1,6 +1,5 @@
 import re
 import json
-from typing import Any
 
 class ConceptParser:
     """
@@ -85,4 +84,4 @@ class ConceptParser:
 # parser = ConceptParser("../utilities.json")
 # text = parser.concepts2paragraph(cs)
 # test =  "I think you'll find a carpet in the bedroom behind the desk. If not in that location, check the pad."
-# print(parser.score(" ".join(parser.get_vocab())))
+# print(parser.score(" ".join(parser.get_vocab())), parser.score(""))
