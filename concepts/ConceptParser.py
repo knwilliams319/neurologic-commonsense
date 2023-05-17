@@ -56,7 +56,7 @@ class ConceptParser:
     
     def score(self, text:str) -> float:
         if self.vocab == None or self.vocab == []:
-            raise ValueError("Parser vocabulary has not been set. Cannot score text.")
+            raise ValueError("Parser vocabulary has not been set.")
         
         candidates = list(set(re.split("[\W]+", text)))
         

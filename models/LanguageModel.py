@@ -2,7 +2,7 @@ import torch
 from transformers import AutoTokenizer, GPT2Model, GPT2LMHeadModel, T5Tokenizer, T5ForConditionalGeneration, pipeline, set_seed, PhrasalConstraint
 
 class BaseLM(torch.nn.Module):
-    def __init__(self, model:str = "gpt2", seed:int = 0, max_len:int = 50, num_returns:int = 1, num_beams:int = 5):
+    def __init__(self, model:str = "gpt2", seed:int = 0, max_len:int = 15, num_returns:int = 1, num_beams:int = 5):
         super(BaseLM, self).__init__()
         if model == "gpt2":
             self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
