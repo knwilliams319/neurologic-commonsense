@@ -9,6 +9,7 @@ class ConceptParser:
     These can be used to weight the branches in neurologic decoding
     but they generally should not serve as contraints.
     """
+    
     def __init__(self, stopwords_path:str = ""):
         self.vocab = None
         self.stopwords = []
@@ -29,13 +30,19 @@ class ConceptParser:
         text = " ".join(relation) + "."
         return text.lower()
 
-    def concepts2paragraph(self, concept_set:list, set_vocab:bool = True) -> str:
+    def concepts2paragraph(
+        self, concept_set:list, 
+        set_vocab:bool = True,
+        return_list:bool = False
+        ) -> str or list:
+        
         text = ""
         for concept in concept_set:
             text += " " + self.relation2sentence(concept)
             
         if set_vocab:
-            unique_tokens = list(set(re.split("[\W]+", text)))
+            split_text = re.split("[\W]+", text)
+            unique_tokens = list(set(split_text))
             
             self.set_vocab( 
                 sorted([
@@ -43,13 +50,21 @@ class ConceptParser:
                     if token not in self.stopwords
                 ])
             )
-            
+        
+        if return_list:
+            return split_text[1:-1]
+        
         return text
     
     def get_vocab(self):
         return self.vocab
     
     def set_vocab(self, vocab:list) -> None:
+        if not isinstance(vocab, list):
+            raise ValueError(
+                f"Parser vocabulary must be a list, not {type(vocab)}."
+            )
+        
         del self.vocab
         self.vocab = vocab
         return self
@@ -66,7 +81,7 @@ class ConceptParser:
                 count += 1
         
         return count / len(self.vocab)
-        
+    
 # cs = [
 #     {'start': 'a carpet', 'end': 'a house', 'relationship': 'AtLocation', 'weight': 7.745966692414834},
 #     {'start': 'the carpet pad', 'end': 'the carpet', 'relationship': 'AtLocation', 'weight': 6.0},
@@ -85,3 +100,5 @@ class ConceptParser:
 # text = parser.concepts2paragraph(cs)
 # test =  "I think you'll find a carpet in the bedroom behind the desk. If not in that location, check the pad."
 # print(parser.score(" ".join(parser.get_vocab())), parser.score(""))
+# print(parser.concepts2paragraph(cs, return_list=True))
+# print(parser.concepts2paragraph(cs))
