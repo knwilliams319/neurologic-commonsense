@@ -84,13 +84,14 @@ for path in [DEVPATH, TESTPATH, TRAINPATH]:
     questions_completed = 0
 
     for keywords_list in data['keywords']:
+        keywords_list = eval(keywords_list)
         if N_GRAMS > 1: # If we want to try permutations of keywords
             for n_gram in range(2, N_GRAMS+1): # Try all permutations of lengths
                 for combo in itertools.permutations(keywords_list, n_gram):
                     query_concept = '_'.join(combo)
                     edges = CNR.get_edges(query_concept)
-                    if edges: process_edges(' '.join(combo), edges) 
-        
+                    if edges: process_edges(' '.join(combo), edges)
+
         for keyword in keywords_list: # Then process the original keywords without permutation
             edges = CNR.get_edges(keyword)
             if edges: process_edges(keyword, edges)
@@ -108,6 +109,5 @@ with open(f'concepts_{N_GRAMS}.json', 'w') as f:
 
 
 
-        
 
 
