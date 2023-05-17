@@ -17,65 +17,36 @@ N_GRAMS = 1
 concept_list = {}
 CNR = ConceptNetRequestor()
 
-def process_edges(query_concept, edges_list):
+
+def get_num_relations(edges):
+    num_relations = {}
+    for edge in edges:
+        if edge["relationship"] not in num_relations.keys():
+            num_relations[edge["relationship"]] = 1
+        else:
+            num_relations[edge["relationship"]] += 1
+    return num_relations
+
+def process_edges(query_concept, edges_list, num_tripples=5, bidirectional=False):
     # NOTE: Edges will be added bidirectionally. I think it might help to have all outward/inward
     #       nodes attached to a single queried node, and we can still recreate the directional graph
-    #       easily if we want. 
+    #       easily if we want.
+    if query_concept in concept_list.keys():
+        return
+    if not bidirectional:
+        edges_list = [x for x in edges_list if query_concept == x['start']]
 
-    for edge in edges_list:
-        if edge['start'] not in concept_list:
-            # Each item in concept_list gives an array of concept edges pointing in/out 
-            # from the key concept. The corresponding edges' relations and weights will be
-            # stored in the same order in case they end up being useful later. 
-            concept_list[edge['start']] = {
-                'concepts_in': [],
-                'rlns_in': [],
-                'weights_in': [],
-                'concepts_out': [],
-                'rlns_out': [],
-                'weights_out': []
-            }
+    if num_tripples > len(edges_list):
+        num_tripples = len(edges_list)
 
-        if edge['end'] not in concept_list:
-            # Each item in concept_list gives an array of concept edges pointing in/out 
-            # from the key concept. The corresponding edges' relations and weights will be
-            # stored in the same order in case they end up being useful later. 
-            concept_list[edge['end']] = {
-                'concepts_in': [],
-                'rlns_in': [],
-                'weights_in': [],
-                'concepts_out': [],
-                'rlns_out': [],
-                'weights_out': []
-            }
+    scores = [0] * len(edges_list)
 
-        if query_concept == edge['start']: # If the key is the start node, this is an outward edge
-           
-            # Make sure the edge isn't already tracked, perhaps by another question that had
-            # the same keyword.
-            if edge['end'] not in concept_list[edge['start']]['concepts_out']: 
-                concept_list[edge['start']]['concepts_out'].append(edge['end'])
-                concept_list[edge['start']]['rlns_out'].append(edge['relationship'])
-                concept_list[edge['start']]['weights_out'].append(edge['weight'])
+    num_relations = get_num_relations(edges_list)
+    for index, edge in enumerate(edges_list):
+        scores[index] = [edge, edge['weight'] * (len(edges_list)/num_relations[edges_list[index]['relationship']])]
+    scores.sort(key=lambda x: x[1])
+    concept_list[query_concept] = [i[0] for i in scores[:num_tripples]]
 
-            if edge['start'] not in concept_list[edge['end']]['concepts_in']:
-                concept_list[edge['end']]['concepts_in'].append(edge['start'])
-                concept_list[edge['end']]['rlns_in'].append(edge['relationship'])
-                concept_list[edge['end']]['weights_in'].append(edge['weight'])
-
-        else:  # This is an inward edge
-
-            # Make sure the edge isn't already tracked, perhaps by another question that had
-            # the same keyword.
-            if edge['start'] not in concept_list[edge['end']]['concepts_in']:
-                concept_list[edge['end']]['concepts_in'].append(edge['start'])
-                concept_list[edge['end']]['rlns_in'].append(edge['relationship'])
-                concept_list[edge['end']]['weights_in'].append(edge['weight'])
-
-            if edge['end'] not in concept_list[edge['start']]['concepts_out']:
-                concept_list[edge['start']]['concepts_out'].append(edge['end'])
-                concept_list[edge['start']]['rlns_out'].append(edge['relationship'])
-                concept_list[edge['start']]['weights_out'].append(edge['weight'])
 
 for path in [DEVPATH, TESTPATH, TRAINPATH]:
     data_file_path = os.path.join(os.pardir, 'data', path)
@@ -85,29 +56,24 @@ for path in [DEVPATH, TESTPATH, TRAINPATH]:
 
     for keywords_list in data['keywords']:
         keywords_list = eval(keywords_list)
-        if N_GRAMS > 1: # If we want to try permutations of keywords
-            for n_gram in range(2, N_GRAMS+1): # Try all permutations of lengths
+        if N_GRAMS > 1:  # If we want to try permutations of keywords
+            for n_gram in range(2, N_GRAMS + 1):  # Try all permutations of lengths
                 for combo in itertools.permutations(keywords_list, n_gram):
                     query_concept = '_'.join(combo)
                     edges = CNR.get_edges(query_concept)
-                    if edges: process_edges(' '.join(combo), edges)
+                    if edges: process_edges(' '.join(combo), edges, bidirectional=True, num_tripples=5)
 
-        for keyword in keywords_list: # Then process the original keywords without permutation
+        for keyword in keywords_list:  # Then process the original keywords without permutation
             edges = CNR.get_edges(keyword)
-            if edges: process_edges(keyword, edges)
+            if edges: process_edges(keyword, edges, bidirectional=True, num_tripples=5)
 
-        questions_completed+=1
+        questions_completed += 1
 
-        if questions_completed % 100:
+        if not questions_completed % 5:
             print(questions_completed)
 
-            with open(f'concepts_{N_GRAMS}.json', 'w') as f:
-                json.dump(concept_list, f)
+        with open(f'concepts_{N_GRAMS}_{path.split("split")[0]}', 'w') as f:
+            json.dump(concept_list, f)
 
 with open(f'concepts_{N_GRAMS}.json', 'w') as f:
     json.dump(concept_list, f)
-
-
-
-
-
