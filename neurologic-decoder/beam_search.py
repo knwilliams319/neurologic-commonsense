@@ -16,19 +16,23 @@ class Beam(NamedTuple):
 def top_k(beam_width, probs):
     return torch.topk(probs, beam_width)
     
-def top_p(beam_width, probs):
+def top_p(beam_width, probs, nucleus):
     """
     This function was borrowed from transformers/generation_utils
     https://huggingface.co/transformers/v3.2.0/_modules/transformers/generation_utils.html
     """
     logits = probs
-    min_tokens_to_keep = 1
+    min_tokens_to_keep = beam_width
     
     sorted_logits, sorted_indices = torch.sort(logits, descending=True)
-    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+    cumulative_probs = torch.cumsum(
+        torch.nn.functional.softmax(sorted_logits, dim=-1), 
+        dim=-1
+    )
 
-    # Remove tokens with cumulative probability above the threshold (token with 0 are kept)
-    sorted_indices_to_remove = cumulative_probs > top_p
+    # Remove tokens with cumulative probability 
+    # above the threshold (token with 0 are kept)
+    sorted_indices_to_remove = cumulative_probs > nucleus
     if min_tokens_to_keep > 1:
         # Keep at least min_tokens_to_keep (set to min_tokens_to_keep-1 because we add the first one below)
         sorted_indices_to_remove[..., :min_tokens_to_keep] = 0
@@ -39,13 +43,20 @@ def top_p(beam_width, probs):
     # scatter sorted tensors to original indexing
     indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
     logits[indices_to_remove] = -float("Inf")
+    print(logits)
+    return logits
 
-def get_candidates(beam_type, beam_width, probs, tokenizer, exclude_tokens):
+def get_candidates(
+    beam_type, beam_width, 
+    probs, tokenizer, 
+    nucleus, exclude_tokens
+    ):
+    
     if beam_type == "top_k":
         scores, indicies = top_k(beam_width + len(exclude_tokens), probs)
         scores = scores.tolist()
     elif beam_type == "top_p":
-        scores, indicies = top_p(beam_width + len(exclude_tokens), probs)
+        scores, indicies = top_p(beam_width + len(exclude_tokens), probs, nucleus)
         scores = scores.tolist()
     
     candidates = []
@@ -129,7 +140,7 @@ def beam_search(
                 scores, candidates = get_candidates(
                     beam_type, beam_width, 
                     probs, tokenizer,
-                    exclude_tokens
+                    nucleus, exclude_tokens
                 )
             else:
                 raise TypeError(f"Invalid beam_type ' {beam_type} '.")
@@ -223,5 +234,9 @@ parser = ConceptParser("../utilities.json")
 knowledge = parser.concepts2paragraph(cs)
 
 # b = beam_search(start_state="What is the fourth planet from the sun?", model=model, tokenizer=tokenizer, parser=parser)
-b = beam_search(start_state=knowledge+" What is the fourth planet from the sun?", model=model, tokenizer=tokenizer, parser=None)
+b = beam_search(
+    start_state=knowledge+" What is the fourth planet from the sun?",
+    model=model, tokenizer=tokenizer, parser=None, nucleus=0.3,
+    beam_type="top_p"
+)
 print(beam2text(b))
