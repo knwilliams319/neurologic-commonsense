@@ -17,6 +17,7 @@ class ConceptParser:
         if stopwords_path != "":
             with open(stopwords_path) as file:
                 self.stopwords = json.load(file)["stopwords"]["english"]
+                # print("stopwords:", self.stopwords)
     
     def relation2sentence(self, node:dict) -> str:
         relation = re.split('(?<=.)(?=[A-Z])', node["relationship"])
