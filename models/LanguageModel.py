@@ -29,6 +29,9 @@ class BaseLM(torch.nn.Module):
         self.model_type = model
         self.num_returns = num_returns
     
+    def forward(self):
+        pass
+    
     def decode(
         self, text:str,
         constrained:bool = False, 
