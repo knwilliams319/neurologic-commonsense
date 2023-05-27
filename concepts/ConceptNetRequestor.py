@@ -8,23 +8,37 @@ Reference: https://github.com/commonsense/conceptnet5/wiki/API
 Last Modified Date: 5/10/2023
 Last Modified By: Kyle Williams
 '''
-import requests # used by the ConceptNetRequestor
-import re # used by ConceptNetRequestor to format multiple-word nodes
-import sys # used by __main__
+# Query methods
+import requests 
+import re 
+import dask.dataframe as dd 
+import pandas as pd
+import time
+
+import sys # used by __main__ only
+
 
 class ConceptNetRequestor: 
-    def __init__(self):
+    def __init__(self, mode='csv'):
         """
         A class to handle requests to the ConceptNet API.
 
         Attributes
         ----------
+        mode : str 
+             Defaults to 'csv' to use dask and pandas to read from the cleaned CSV of ConceptNet
+             edges. Otherwise, will query the API through an HTTP request
         api : str
             Base path to the concept net API
         """
-        self.api = "http://api.conceptnet.io/c/en/"
+        self.mode = mode
+        if mode == 'csv':
+            self.edges_out = dd.read_csv('conceptnet-out-assertions-5.7.0-en.csv', sep=',').set_index('src')
+            self.edges_in = dd.read_csv('conceptnet-in-assertions-5.7.0-en.csv', sep=',', dtype={'dst': 'object'}).set_index('dst')
+        else:
+            self.api = "http://api.conceptnet.io/c/en/"
 
-    def get_edges(self, q_concept: str, raise_error=False):
+    def get_edges(self, q_concept: str, direction:str='both', raise_error=False):
         """
         Makes a request for the information contained at a ConceptNet node, then returns a list of the
         edges of that node.
@@ -51,6 +65,21 @@ class ConceptNetRequestor:
             Whether or not this function should raise a ValueError if the queried concept is not a node in
             ConceptNet
         """
+        if self.mode == 'csv': return self._get_edges_csv(q_concept, direction, raise_error=raise_error)
+        else: return self._get_edges_api(q_concept, raise_error=raise_error)
+
+    def _get_edges_csv(self, q_concept:str, direction:str, raise_error:bool=False):
+        # TODO: Finish writing this function, using dask and the src index as to query ConceptNet
+        #       in a way that is hopefully very efficient. To get both directions efficiently, I
+        #       should consider using a second version that is indexed on dst
+        if direction == 'both':
+            t1 = time.time()
+            nodes_out = self.edges_out.loc[q_concept].compute()['dst'].tolist()
+            nodes_in = self.edges_in.loc[q_concept].compute()['src'].tolist()
+            print (time.time() - t1)
+            return nodes_out + nodes_in
+    
+    def _get_edges_api(self, q_concept: str, raise_error=False):
         if not q_concept: # Check input for validity
             raise ValueError("cannot query ConceptNet for the empty string")
         
@@ -84,14 +113,16 @@ if __name__ == "__main__":
     """
     Invoke main from the command line to see the edges associated with an input concept node
     """
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 4:
         raise ValueError("Please pass an English string to request that node's edges from ConceptNet!")
-    elif len(sys.argv) > 2:
+    elif len(sys.argv) > 4:
         raise ValueError("This function only accepts a single argument")
     else:
-        arg = sys.argv[1]
-        cnr = ConceptNetRequestor()
-        edges = cnr.get_edges(arg)
+        mode = sys.argv[1]
+        arg1 = sys.argv[2]
+        arg2 = sys.argv[3]
+        cnr = ConceptNetRequestor(mode)
+        edges = cnr.get_edges(arg1, arg2)
         for edge in edges:
             print(edge)
         
