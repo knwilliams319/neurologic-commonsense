@@ -126,10 +126,10 @@ class BaseLM(torch.nn.Module):
             return output_text
 
 
-lm = BaseLM(model="gpt2-medium", max_gen_len=20)
+lm = BaseLM(model="gpt2-small", max_gen_len=20)
 
 import numpy as np
-print(np.shape(lm.forward("What is the third planet from the sun?")))
+# print(np.shape(lm.forward("What is the third planet from the sun?")))
 # print(lm.decode("What is the third planet from the sun?",
 #       concepts=["planet", "third", "sun"],
 #       constrained=True))
