@@ -110,49 +110,42 @@ def train(
             
             for j in range(batch_size):
                 
-                seed = ""
                 triples = []
                 for keyword in keywords[j][:keyword_threshold]:
                     # TODO: get concepts for keyword
                     triples.extend(...)
                     
-                # add parsed concepts to seed 
-                seed += parser.concepts2paragraph(triples)
+                # create seed with parsed concepts
+                seed = parser.concepts2paragraph(triples)
                 
-                # add answer
-                seed += answers[j]
-                    
-
-                text = list(batch[:, 0])
-                labels = batch[:, 1].astype(int)
-                labels = torch.Tensor(labels).type(torch.LongTensor).to(device)
-
-                encoding = model.tokenizer(text, truncation=True, max_length=MAX_SEQ_LEN,
-                                padding="max_length", return_attention_mask=False,
-                                return_tensors="pt")
-
-                encoding['input_ids'] = encoding['input_ids'].to(device)
-
+                # add question and answer
+                seed += questions[j] + " " + f"({answers[j]})"
+                
+                # decode
                 optimizer.zero_grad()
+                pass
 
-                out = model.forward(
-                    encoding['input_ids'],
-                    encoding['input_ids']
-                )
-                out = torch.mean(out, dim=1)
 
-                probabilities = F.softmax(out, dim=1)
-                predicted_labels = torch.argmax(probabilities, dim=1)
+            # optimizer.zero_grad()
 
-                loss = criterion(out, labels)
-                epoch_loss += loss.item()
-                loss.backward()
-                optimizer.step()
+            # out = model.forward(
+            #     encoding['input_ids'],
+            #     encoding['input_ids']
+            # )
+            # out = torch.mean(out, dim=1)
 
-                count += batch_size
-                for i, l in enumerate(labels):
-                    if predicted_labels[i] == labels[i]:
-                        correct += 1
+            # probabilities = F.softmax(out, dim=1)
+            # predicted_labels = torch.argmax(probabilities, dim=1)
+
+            # loss = criterion(out, labels)
+            # epoch_loss += loss.item()
+            # loss.backward()
+            # optimizer.step()
+
+            # count += batch_size
+            # for i, l in enumerate(labels):
+            #     if predicted_labels[i] == labels[i]:
+            #         correct += 1
 
         cost.append(epoch_loss/count)
         accuracy.append(correct/count)
