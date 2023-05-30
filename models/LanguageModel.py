@@ -51,6 +51,10 @@ class BaseLM(torch.nn.Module):
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
+        # freeze exisiting layers
+        for param in self.model.parameters():
+            param.requires_grad = False
+        
         # classification head
         self.fc = torch.nn.Linear(50257, 50257)
         self.init_weights()
@@ -129,7 +133,7 @@ class BaseLM(torch.nn.Module):
 lm = BaseLM(model="gpt2-small", max_gen_len=20)
 
 import numpy as np
-# print(np.shape(lm.forward("What is the third planet from the sun?")))
+print(np.shape(lm.forward("What is the third planet from the sun?")))
 # print(lm.decode("What is the third planet from the sun?",
 #       concepts=["planet", "third", "sun"],
 #       constrained=True))

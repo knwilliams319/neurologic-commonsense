@@ -28,3 +28,40 @@ def create_datafiles():
     process_raw_data(DEV_PATH, "DEV")
     process_raw_data(TEST_PATH, "TEST")
     process_raw_data(TRAIN_PATH, "TRAIN")
+    
+def apply_json(s):
+    try:
+        return json.loads(s.replace("\'", "\""))
+    except:
+        return None
+
+def apply_answer(answer, lst):
+    if lst == None:
+        return None
+    else:
+        for item in lst:
+            if item["label"] == answer:
+                return item["text"]
+        return None
+
+def process_data(dir:str, path: str):
+    df = pd.read_csv(dir + path)
+    
+    df["question.choices"] = df["question.choices"].apply(apply_json)
+    
+    try:
+        df["answer"] =  df.apply(lambda r: apply_answer(r["answerKey"], r['question.choices']), axis=1)
+        df = df.drop(columns=['answerKey'])
+        df = df[df["answer"] != None]
+    except:
+        pass
+
+    df = df.drop(columns=['Unnamed: 0', 'id', 'question.choices', 'question.question_concept'])
+    
+    # save as csv file
+    df.to_csv(dir + "refined" + path)
+
+def clean_datafiles():
+    process_data("../data/", "DEVsplit.csv")
+    process_data("../data/", "TESTsplit.csv")
+    process_data("../data/", "TRAINsplit.csv")
