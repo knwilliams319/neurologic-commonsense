@@ -2,7 +2,8 @@ import torch
 from transformers import (GPT2Tokenizer,
                           GPT2LMHeadModel,
                           pipeline, set_seed,
-                          PhrasalConstraint)
+                          PhrasalConstraint,
+                          DisjunctiveConstraint)
 
 
 class BaseLM(torch.nn.Module):
@@ -10,11 +11,14 @@ class BaseLM(torch.nn.Module):
         self,
         model: str = "gpt2",
         seed: int = 0,
-        max_gen_len: int = 15,
+        max_gen_len: int = 20,
         num_returns: int = 1,
-        num_beams: int = 5
+        num_beams: int = 5,
+        unfrozen_threshold: int = 6
     ):
         super(BaseLM, self).__init__()
+        
+        set_seed(seed)
 
         if model == "gpt2" or model == "gpt2-small":
             self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
@@ -41,7 +45,6 @@ class BaseLM(torch.nn.Module):
             raise ValueError(
                 f"Model type ' {model} ' not supported. [BaseLM __init__()]")
 
-        set_seed(seed)
         self.max_gen_len = max_gen_len
         self.beams = num_beams
         self.model_type = model
@@ -50,22 +53,29 @@ class BaseLM(torch.nn.Module):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
+        
+        # freeze all be last few layers
+        for parameter in self.model.parameters():
+            parameter.requires_grad = False
 
-        # classification head
-        self.fc = torch.nn.Linear(50257, 50257)
-        self.init_weights()
+        for i, m in enumerate(self.model.transformer.h):        
+            #Only un-freeze the last n transformer blocks
+            if i >= unfrozen_threshold:
+                for parameter in m.parameters():
+                    parameter.requires_grad = True 
 
-    def init_weights(self):
-        torch.nn.init.xavier_uniform_(self.fc.weight)
-        torch.nn.init.zeros_(self.fc.bias)
+        for parameter in self.model.transformer.ln_f.parameters():        
+            parameter.requires_grad = True
+
+        for parameter in self.model.lm_head.parameters():        
+            parameter.requires_grad = True
 
     def forward(self, text):
         encoding = self.tokenizer(text, return_tensors="pt")
         encoding.to(self.device)
 
         output = self.model(**encoding)
-        lhs = output.last_hidden_state[:, 0, :]  # (135, 50257)
-        logits = self.fc(lhs)
+        logits = output.logits[:, -1, :] # last hidden state
 
         return logits
 
@@ -97,6 +107,8 @@ class BaseLM(torch.nn.Module):
             inputs = self.tokenizer(text, return_tensors="pt")
 
             if constrained:
+                '''
+                This code seemed to force the model to use all of the constraint choices
                 constraints = [
                     PhrasalConstraint(
                         self.tokenizer(
@@ -114,6 +126,21 @@ class BaseLM(torch.nn.Module):
                     no_repeat_ngram_size=1,
                     remove_invalid_values=True,
                 )
+                '''
+                # Attempt to make disjunctive constraints
+                # tokenized_constraints = [id for id in self.tokenizer(concepts, add_special_tokens=False).input_ids]
+                tokenized_constraints = self.tokenizer(concepts, add_special_tokens=False).input_ids
+                constraints = DisjunctiveConstraint(list(tokenized_constraints))
+                output = self.model.generate(
+                    inputs["input_ids"],
+                    constraints=[constraints],
+                    max_new_tokens=self.max_gen_len,
+                    num_beams=self.beams,
+                    num_return_sequences=self.num_returns,
+                    no_repeat_ngram_size=1,
+                    remove_invalid_values=True,
+                )
+                
             else:
                 output = self.model.generate(
                     inputs["input_ids"],
@@ -126,10 +153,10 @@ class BaseLM(torch.nn.Module):
             return output_text
 
 
-lm = BaseLM(model="gpt2-small", max_gen_len=20)
+lm = BaseLM(model="gpt2-medium", max_gen_len=50)
 
 import numpy as np
 # print(np.shape(lm.forward("What is the third planet from the sun?")))
-# print(lm.decode("What is the third planet from the sun?",
-#       concepts=["planet", "third", "sun"],
-#       constrained=True))
+print(lm.decode("What is the third planet from the sun?",
+      concepts=["mars", "jupiter", "venus"],
+      constrained=True))

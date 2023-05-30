@@ -128,9 +128,6 @@ def train(
                 optimizer.zero_grad()
                 pass
 
-
-            # optimizer.zero_grad()
-
             # out = model.forward(
             #     encoding['input_ids'],
             #     encoding['input_ids']
