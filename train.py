@@ -108,6 +108,9 @@ def train(
             # shape: (1, BATCH_SIZE)
             questions, answers, keywords = dataset[i]
             
+            preds = torch.zeros((1, batch_size))
+            labels = torch.ones((1, batch_size))
+            
             for j in range(batch_size):
                 
                 triples = []
