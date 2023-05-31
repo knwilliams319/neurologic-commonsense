@@ -46,9 +46,8 @@ class BaseLM(torch.nn.Module):
         self.beams = num_beams
         self.model_type = model
         self.num_returns = num_returns
-<<<<<<< HEAD:models/LanguageModel.py
 =======
-    
+
     def decode(self, text:str, constrained:bool = False, concepts:list = [], use_beam=True):
         # if use_beam is false, then greedy decoding will be used instead of beam search
         if self.generator:
@@ -81,8 +80,8 @@ class BaseLM(torch.nn.Module):
             
         output_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
         return output_text
->>>>>>> origin:experiments/LanguageModel.py
 
+        '''
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
@@ -94,6 +93,7 @@ class BaseLM(torch.nn.Module):
         # classification head
         self.fc = torch.nn.Linear(50257, 50257)
         self.init_weights()
+        '''
 
     def init_weights(self):
         torch.nn.init.xavier_uniform_(self.fc.weight)

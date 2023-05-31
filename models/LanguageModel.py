@@ -5,7 +5,6 @@ from transformers import (GPT2Tokenizer,
                           PhrasalConstraint,
                           DisjunctiveConstraint)
 
-
 class BaseLM(torch.nn.Module):
     def __init__(
         self,
@@ -44,6 +43,12 @@ class BaseLM(torch.nn.Module):
         else:
             raise ValueError(
                 f"Model type ' {model} ' not supported. [BaseLM __init__()]")
+            
+        self.tokenizer.add_special_tokens({
+            'eos_token': '<|endoftext|>',
+            'bos_token': '<|endoftext|>',
+            'sep_token': '<|sep|>'
+        })
 
         self.max_gen_len = max_gen_len
         self.beams = num_beams
@@ -59,7 +64,6 @@ class BaseLM(torch.nn.Module):
             parameter.requires_grad = False
 
         for i, m in enumerate(self.model.transformer.h):        
-            #Only un-freeze the last n transformer blocks
             if i >= unfrozen_threshold:
                 for parameter in m.parameters():
                     parameter.requires_grad = True 
@@ -153,10 +157,10 @@ class BaseLM(torch.nn.Module):
             return output_text
 
 
-lm = BaseLM(model="gpt2-medium", max_gen_len=50)
+lm = BaseLM(model="gpt2-medium", max_gen_len=2)
 
 import numpy as np
 # print(np.shape(lm.forward("What is the third planet from the sun?")))
 print(lm.decode("What is the third planet from the sun?",
-      concepts=["mars", "jupiter", "venus"],
+      concepts=["have fun"],
       constrained=True))

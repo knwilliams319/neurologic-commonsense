@@ -105,7 +105,7 @@ def train(
         
         for i in range(0, dataset.__len__(), batch_size):
             
-            # shape: (1, BATCH_SIZE)
+            # shapes: (1, BATCH_SIZE)
             questions, answers, keywords = dataset[i]
             
             preds = torch.zeros((1, batch_size))
@@ -122,7 +122,9 @@ def train(
                 seed = parser.concepts2paragraph(triples)
                 
                 # add question and answer
-                seed += questions[j] + " " + f"({answers[j]})"
+                seed += questions[j] + " "
+                seed += model.tokenizer.sep_token + " "
+                seed += answers[j]
                 
                 # decode
                 optimizer.zero_grad()
