@@ -40,17 +40,17 @@ def find_vocab_size():
         for keywords_list in data['keywords']: # Each question has its own list of keywords extracted by BERT
             keywords_list = eval(keywords_list)
 
-            if N_GRAMS > 1: # If we want to try permutations of keywords
-                for n_gram in range(2, N_GRAMS+1): # Try all lengths of permutations specified
-                    for combo in itertools.permutations(keywords_list, n_gram):
-                        query_concept = '_'.join(combo) # Multi-word concepts are separated by '_' in the API path
-                        _add_to_vocab(vocab, query_concept, depths, DEPTH)
+        if N_GRAMS > 1: # If we want to try permutations of keywords
+            for n_gram in range(2, N_GRAMS+1): # Try all lengths of permutations specified
+                for combo in itertools.permutations(keywords_list, n_gram):
+                    query_concept = '_'.join(combo) # Multi-word concepts are separated by '_' in the API path
+                    _add_to_vocab(vocab, query_concept, depths, DEPTH)
 
-            for keyword in keywords_list: # Then process the original keywords without permutation
-                _add_to_vocab(vocab, keyword, depths, DEPTH)
+        for keyword in keywords_list: # Then process the original keywords without permutation
+            _add_to_vocab(vocab, keyword, depths, DEPTH)
 
-            print(questions_completed)
-            questions_completed += 1
+        print(questions_completed)
+        questions_completed += 1
 
     with open("vocab.pkl", "wb") as f:
         pickle.dump(vocab, f)

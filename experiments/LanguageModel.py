@@ -1,9 +1,5 @@
 import torch
-from transformers import (GPT2Tokenizer,
-                          GPT2LMHeadModel,
-                          pipeline, set_seed,
-                          PhrasalConstraint)
-
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, pipeline, set_seed, PhrasalConstraint
 
 class BaseLM(torch.nn.Module):
     def __init__(
@@ -22,6 +18,7 @@ class BaseLM(torch.nn.Module):
                 'gpt2',
                 pad_token_id=self.tokenizer.eos_token_id
             )
+            self.tokenizer.pad_token = self.tokenizer.eos_token
             self.generator = pipeline('text-generation', model='gpt2')
         elif model == "gpt2-medium":
             self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
@@ -29,6 +26,7 @@ class BaseLM(torch.nn.Module):
                 'gpt2-medium',
                 pad_token_id=self.tokenizer.eos_token_id
             )
+            self.tokenizer.pad_token = self.tokenizer.eos_token
             self.generator = pipeline('text-generation', model='gpt2-medium')
         elif model == "gpt2-large":
             self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
@@ -46,8 +44,6 @@ class BaseLM(torch.nn.Module):
         self.beams = num_beams
         self.model_type = model
         self.num_returns = num_returns
-<<<<<<< HEAD:models/LanguageModel.py
-=======
     
     def decode(self, text:str, constrained:bool = False, concepts:list = [], use_beam=True):
         # if use_beam is false, then greedy decoding will be used instead of beam search
@@ -81,8 +77,8 @@ class BaseLM(torch.nn.Module):
             
         output_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
         return output_text
->>>>>>> origin:experiments/LanguageModel.py
 
+        '''
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
@@ -94,6 +90,7 @@ class BaseLM(torch.nn.Module):
         # classification head
         self.fc = torch.nn.Linear(50257, 50257)
         self.init_weights()
+        '''
 
     def init_weights(self):
         torch.nn.init.xavier_uniform_(self.fc.weight)
@@ -165,11 +162,11 @@ class BaseLM(torch.nn.Module):
                 output[0], skip_special_tokens=True)
             return output_text
 
+if __name__ == "__main__":
+    lm = BaseLM(model="gpt2-small", max_gen_len=20)
 
-lm = BaseLM(model="gpt2-small", max_gen_len=20)
-
-import numpy as np
-print(np.shape(lm.forward("What is the third planet from the sun?")))
-# print(lm.decode("What is the third planet from the sun?",
-#       concepts=["planet", "third", "sun"],
-#       constrained=True))
+    import numpy as np
+    print(np.shape(lm.forward("What is the third planet from the sun?")))
+    # print(lm.decode("What is the third planet from the sun?",
+    #       concepts=["planet", "third", "sun"],
+    #       constrained=True))
