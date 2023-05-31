@@ -45,8 +45,6 @@ class BaseLM(torch.nn.Module):
         self.model_type = model
         self.num_returns = num_returns
 
-=======
-    
     def decode(self, text:str, constrained:bool = False, concepts:list = [], use_beam=True):
         # if use_beam is false, then greedy decoding will be used instead of beam search
         if self.generator:
